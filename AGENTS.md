@@ -21,8 +21,9 @@
 | `Scripts/SarmatDTC/aircraft/<type>.lua` | **Один файл на модуль DCS**: переводит обстановку в DTC этого модуля, держит его символы и лимиты. Подхватывается автоматически |
 | `Scripts/SarmatDTC/aircraft/_template.lua` | Шаблон модуля с описанием API (файлы на `_` не загружаются) |
 | `Scripts/SarmatDTC/SarmatDTC_http.lua` | Неблокирующий HTTPS GET без зависимостей от DCS (LuaSocket + LuaSec передаются параметром), шаг за кадр; загрузка LuaSocket/LuaSec (`loadTls`) |
-| `Scripts/SarmatDTC/lib/` | LuaSec для DCS: `ssl.dll` (x64, OpenSSL внутри, импорт `lua.dll`), `ssl.lua`, `cacert.pem`, лицензии, `VERSIONS.txt`. **Собирается и коммитится workflow** `.github/workflows/build-luasec.yml`, руками не править |
-| `.github/workflows/build-luasec.yml` | Сборка `lib/` на windows-2022 (MSVC, OpenSSL из vcpkg статически, Lua 5.1.5 как `lua.dll`), проверка зависимостей DLL, smoke-тест и `test_http.lua`, коммит в ветку |
+| `Scripts/SarmatDTC/lib/` | LuaSec для DCS: `ssl.dll` (x64, OpenSSL внутри, импорт `lua.dll`), `ssl.lua`, `cacert.pem`, лицензии, `VERSIONS.txt`. **Окончательная версия** (решение владельца: обновлений DLL не будет), собрана workflow `.github/workflows/build-luasec.yml`, руками не править |
+| `.github/workflows/build-luasec.yml` | **Только ручной запуск**: воспроизводит `lib/` из закреплённых исходников на windows-2022 (MSVC, OpenSSL из vcpkg статически, Lua 5.1.5 как `lua.dll`), проверка зависимостей DLL, smoke-тест и `test_http.lua`, коммит в ветку |
+| `.github/workflows/release.yml` | Тег `v<VERSION>` → проверка, что тег совпадает с `VERSION` и `lib/` на месте, `test_http.lua`, zip из `git archive` тега (без путей `export-ignore` из `.gitattributes`: тесты, CI, AGENTS/CLAUDE), релиз GitHub с zip и `.sha256` |
 | `Scripts/SarmatDTC/tests/` | Офлайн-тесты и фикстуры (снимок данных карты, Сирия) |
 | `Scripts/SarmatDTC/cache/` | Кэш загрузки, генерируется во время работы, в git не попадает |
 
@@ -314,7 +315,7 @@ powershell -ExecutionPolicy Bypass -File "Scripts\SarmatDTC\tests\run_tests.ps1"
   и TLS-контекст; `-Online` — **один** реальный запрос `status.json` (время шагов в выводе). Если `luae.exe`
   собран со статическим Lua, загрузка `ssl.dll` в нём невозможна — решает проверка в игре.
 - Интерпретатор — `bin\luae.exe` из установки DCS (Lua 5.1), запускать с рабочей папкой в корне DCS.
-- `test_http.lua` и эвристическая проверка `ssl.dll` идут и в CI (`build-luasec.yml`) на собранном там `lua.exe`.
+- `test_http.lua` идёт и в CI: в `release.yml` (Lua 5.1 на Ubuntu) и в ручном `build-luasec.yml` на собранном там `lua.exe`.
 - В DCS реально не запускается: после изменений в колбэках просить пользователя проверить в игре
   (`Logs\dcs.log`, тег `SARMAT.DTC`).
 
@@ -361,8 +362,11 @@ powershell -ExecutionPolicy Bypass -File "Scripts\SarmatDTC\tests\run_tests.ps1"
 - Кэш: `Scripts\SarmatDTC\cache\status.json`, `units.json`. Строки загрузки в логе: `HTTPS: ...` (откуда
   взят LuaSec), `downloading ...`, `map data downloaded in N s` или `download failed (<файл>: <причина>)`.
   Ручная проверка загрузки и LuaSec вне игры: `run_tests.ps1 -Online`.
-- Обновить LuaSec/OpenSSL/`cacert.pem`: поменять версии/хеши в `build-luasec.yml` (или запустить его
-  вручную) — workflow сам закоммитит новый `lib/`. Поднять `VERSION`: имя копии в `%ProgramData%` от неё зависит.
+- `lib/` не обновляется (решение владельца). Если это всё же понадобится: поменять версии/хеши в
+  `build-luasec.yml` и запустить его вручную — он закоммитит новый `lib/`; поднять `VERSION`: имя копии
+  в `%ProgramData%` от неё зависит.
+- Выпуск: поднять `VERSION`, закоммитить, `git tag v<VERSION>` и запушить тег — `release.yml` опубликует
+  `SarmatDTC-<VERSION>.zip`. Новый файл, который не должен попасть в архив, — `export-ignore` в `.gitattributes`.
 - После записи в чат приходит короткое локальное сообщение (`CONFIG.SHOW_CHAT`), например
   `SarmatDTC: BLUE DTC ready (Hatay): AH-64D, F-16C, FA-18C`: сторона, база спавна, записанные
   типы (часть до `_`). После ` - ` идут пометки: `download failed`/`download timed out`, `map data 2 h old`,

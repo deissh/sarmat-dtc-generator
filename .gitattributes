@@ -6,3 +6,10 @@
 *.json -diff
 # expected test output is compared byte for byte
 Scripts/SarmatDTC/tests/fixtures/expected/*.lua -text
+# not in the release zip (git archive, .github/workflows/release.yml)
+/.github export-ignore
+/.gitignore export-ignore
+/.gitattributes export-ignore
+/AGENTS.md export-ignore
+/CLAUDE.md export-ignore
+/Scripts/SarmatDTC/tests export-ignore
