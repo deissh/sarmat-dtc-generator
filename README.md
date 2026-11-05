@@ -52,9 +52,8 @@ Apache получает не всю карту, а то, что важно дл�
 
 1. Найдите папку DCS в `Saved Games`: та, где есть `Logs\dcs.log`. Обычно это
    `%USERPROFILE%\Saved Games\DCS\` (DCS 2.9+) или `%USERPROFILE%\Saved Games\DCS.openbeta\`.
-2. Скачайте `SarmatDTC-<версия>.zip` со страницы
-   [Releases](https://github.com/deissh/sarmat-dtc-generator/releases) и распакуйте его в эту папку
-   с объединением папок (или скопируйте папку `Scripts` из репозитория).
+2. Скопируйте в неё папку `Scripts` из репозитория (с объединением папок) или распакуйте туда
+   готовый архив: Actions → `package` → нужный запуск → артефакт `SarmatDTC-<версия>-<коммит>`.
 3. Запустите DCS. В `Logs\dcs.log` должна появиться строка `SARMAT.DTC ... loaded, version ...`.
 
 **Обновление** — скопируйте `Scripts` заново. Ваш `config.user.lua` сохранится: его нет в поставке.
@@ -211,7 +210,7 @@ API модуля — в [`aircraft/_template.lua`](Scripts/SarmatDTC/aircraft/_t
 | `Scripts/SarmatDTC/aircraft/<type>.lua` | Один файл на модуль DCS, подхватывается автоматически (`_*.lua` пропускаются) |
 | `Scripts/SarmatDTC/config.lua` | Настройки по умолчанию; поверх — `config.user.lua` игрока |
 | `Scripts/SarmatDTC/SarmatDTC_http.lua` | Неблокирующий HTTPS GET (LuaSocket DCS + LuaSec), шаг за кадр; загрузка LuaSec |
-| `Scripts/SarmatDTC/lib/` | LuaSec: `ssl.dll`, `ssl.lua`, `cacert.pem`. Окончательная сборка; `.github/workflows/build-luasec.yml` (ручной запуск) воспроизводит её |
+| `Scripts/SarmatDTC/lib/` | LuaSec: `ssl.dll`, `ssl.lua`, `cacert.pem`. Окончательная сборка (как собрана — `lib/VERSIONS.txt`) |
 | `Scripts/SarmatDTC/tests/` | Офлайн-тесты, фикстуры (снимок карты, Сирия) и эталоны |
 
 `.gitignore` — allowlist: репозиторий лежит в самой папке `Saved Games\DCS.openbeta`, новый файл
@@ -266,17 +265,8 @@ powershell -ExecutionPolicy Bypass -File "Scripts\SarmatDTC\tests\run_tests.ps1"
 
 ## Выпуск
 
-1. Поднять `VERSION` в `SarmatDTC.lua` (видна в `dcs.log` игрока), прогнать тесты (`-Online` один раз), закоммитить.
-2. Создать и запушить тег с той же версией:
-
-```bash
-git tag v1.2.0
-```
-
-```bash
-git push origin v1.2.0
-```
-
-Workflow `release` проверит, что тег совпадает с `VERSION` и `lib/` на месте, прогонит `test_http.lua`
-и опубликует релиз с `SarmatDTC-<версия>.zip` и его `.sha256`. Архив — `git archive` тега без путей
-`export-ignore` из `.gitattributes` (тесты, CI, AGENTS.md). `lib/` больше не пересобирается.
+Поднять `VERSION` в `SarmatDTC.lua` (видна в `dcs.log` игрока), прогнать тесты (`-Online` один раз),
+закоммитить и запушить. Workflow `package` на каждый пуш проверяет, что `lib/` на месте, и выкладывает
+мод артефактом `SarmatDTC-<версия>-<коммит>` (Actions → запуск → Artifacts). Состав — `git archive`
+коммита без путей `export-ignore` из `.gitattributes` (тесты, CI, AGENTS.md). Релизы GitHub не публикуются,
+`lib/` больше не пересобирается.
